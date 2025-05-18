@@ -11,6 +11,7 @@ komaka is a lightweight, fast, and versatile command-line AI assistant built wit
 - Use an advanced agent mode for step-by-step task completion with tool access.
 - Supports multiple AI providers: OpenAI, Google, Groq.
 - Context-aware prompts using system information like current directory, OS, memory, disk space, and git status.
+- Advanced file editing capabilities with find/replace, block markers, and line ranges.
 
 ## Installation
 
@@ -58,6 +59,60 @@ Options:
 ## Notes
 
 This project leverages Bun for fast runtime and React Ink for terminal UI components. It is designed to be a helpful, context-aware AI assistant in the terminal.
+
+## File Editing
+
+The agent supports three powerful modes for editing files:
+
+### Find & Replace Mode
+
+Replace text using string or regex patterns:
+
+```typescript
+await edit_file_segment.tool.execute({
+  mode: "find_replace",
+  file: "path/to/file",
+  find: "pattern to find",
+  replace: "replacement text",
+  all: true,  // Replace all occurrences (default) or just first one
+});
+```
+
+### Block Mode
+
+Replace content between start and end markers:
+
+```typescript
+await edit_file_segment.tool.execute({
+  mode: "block",
+  file: "path/to/file",
+  start: "start marker pattern",
+  end: "end marker pattern",
+  replace: "new content",
+  includeMarkers: false,  // Whether to include markers in replacement
+});
+```
+
+### Line Range Mode
+
+Replace specific lines in a file:
+
+```typescript
+await edit_file_segment.tool.execute({
+  mode: "line_range",
+  file: "path/to/file",
+  startLine: 10,  // 1-based line numbers
+  endLine: 20,
+  replace: "new content",
+  inclusive: true,  // Whether to include endLine in replacement
+});
+```
+
+All modes support:
+- String or regex patterns
+- UTF-8 encoding (default) or other encodings
+- Detailed success/error reporting
+- Safe file handling
 
 ---
 

@@ -269,3 +269,131 @@ export const stat_file = withRender(
     },
   })
 );
+
+const baseEditParams = {
+  file: z.string().describe("The file to edit"),
+  replace: z.string().describe("The content to replace with"),
+  encoding: z.string().optional().default("utf8"),
+};
+
+const findReplaceParams = z.object({
+  ...baseEditParams,
+  mode: z.literal("find_replace"),
+  find: z.string().describe("The string/regex pattern to find"),
+  all: z.boolean().optional().default(true),
+});
+
+const blockParams = z.object({
+  ...baseEditParams,
+  mode: z.literal("block"),
+  start: z.string().describe("The start marker (string/regex)"),
+  end: z.string().describe("The end marker (string/regex)"),
+  includeMarkers: z.boolean().optional().default(false),
+});
+
+const lineRangeParams = z.object({
+  ...baseEditParams,
+  mode: z.literal("line_range"),
+  startLine: z.number().describe("The starting line number (1-based)"),
+  endLine: z.number().describe("The ending line number (1-based)"),
+  inclusive: z.boolean().optional().default(true),
+});
+
+const editFileSegmentParams = z.discriminatedUnion("mode", [
+  findReplaceParams,
+  blockParams,
+  lineRangeParams,
+]);
+
+export const edit_file_segment = withRender(
+  tool({
+    description:
+      "Edit a segment of a file using find/replace, block markers, or line ranges",
+    parameters: editFileSegmentParams,
+    execute: async (params: z.infer<typeof editFileSegmentParams>) => {
+      const { file, mode, encoding = "utf8" } = params;
+      const enc: BufferEncoding = Buffer.isEncoding(encoding)
+        ? (encoding as BufferEncoding)
+        : "utf8";
+
+      const content = await fs.readFile(file, { encoding: enc });
+      let newContent = content;
+      let matches = 0;
+
+      switch (mode) {
+        case "find_replace": {
+          const { find, replace, all = true } = params;
+          const regex = new RegExp(find, all ? "g" : "");
+          if (all) {
+            newContent = content.replace(regex, replace);
+            matches = (content.match(regex) || []).length;
+          } else {
+            const match = content.match(regex);
+            if (match) {
+              newContent = content.replace(regex, replace);
+              matches = 1;
+            }
+          }
+          break;
+        }
+        case "block": {
+          const { start, end, replace, includeMarkers = false } = params;
+          const startRegex = new RegExp(start, "m");
+          const endRegex = new RegExp(end, "m");
+          const startMatch = content.match(startRegex);
+          if (startMatch?.index == null) break;
+          const afterStartIdx = startMatch.index + startMatch[0].length;
+          const afterStart = content.slice(afterStartIdx);
+          const endMatch = afterStart.match(endRegex);
+          if (endMatch?.index == null) break;
+          let blockStart, blockEnd;
+          if (includeMarkers) {
+            blockStart = startMatch.index;
+            blockEnd = afterStartIdx + endMatch.index + endMatch[0].length;
+          } else {
+            blockStart = afterStartIdx;
+            blockEnd = afterStartIdx + endMatch.index;
+          }
+          // Always print debug info for troubleshooting
+          console.debug({
+            blockStart,
+            blockEnd,
+            before: content.slice(0, blockStart),
+            after: content.slice(blockEnd),
+            newContent:
+              content.slice(0, blockStart) + replace + content.slice(blockEnd),
+          });
+          newContent =
+            content.slice(0, blockStart) + replace + content.slice(blockEnd);
+          matches = 1;
+          break;
+        }
+        case "line_range": {
+          const { startLine, endLine, replace, inclusive = true } = params;
+          const lines = content.split("\n");
+          const start = Math.max(0, startLine - 1);
+          const end = inclusive ? endLine - 1 : endLine - 2;
+          if (start >= 0 && end < lines.length && start <= end) {
+            const numLines = end - start + 1;
+            lines.splice(start, numLines, replace);
+            newContent = lines.join("\n");
+            matches = numLines;
+          }
+          break;
+        }
+      }
+
+      if (matches > 0) {
+        await fs.writeFile(file, newContent, { encoding: enc });
+      }
+
+      return {
+        file,
+        mode,
+        matches,
+        success: matches > 0,
+        error: matches === 0 ? "No matches found" : undefined,
+      };
+    },
+  })
+);
