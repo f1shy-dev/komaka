@@ -464,3 +464,50 @@ Extra shared parameters:
     },
   })
 );
+
+export const cd = withRender(
+  tool({
+    description:
+      "Change the current working directory (cwd) of the process. Requires confirmation.",
+    parameters: z.object({
+      dir: z.string().describe("The directory to change to"),
+    }),
+    execute: async ({ dir }: { dir: string }) => {
+      const cwd = process.cwd();
+      const resolved = path.resolve(cwd, dir);
+      let stat;
+      try {
+        stat = await fs.stat(resolved);
+      } catch (err: any) {
+        return {
+          dir: resolved,
+          success: false,
+          error: `Target directory does not exist: ${resolved}`,
+        };
+      }
+      if (!stat.isDirectory()) {
+        return {
+          dir: resolved,
+          success: false,
+          error: `Target path is not a directory: ${resolved}`,
+        };
+      }
+      const confirmed = await requireConfirmation(
+        `Allow agent to change directory to \"${resolved}\"?`
+      );
+      if (!confirmed) {
+        return {
+          dir: resolved,
+          success: false,
+          error: `Changing directory to \"${resolved}\" was disallowed by the user.`,
+        };
+      }
+      process.chdir(resolved);
+      return {
+        dir: resolved,
+        success: true,
+        cwd: process.cwd(),
+      };
+    },
+  })
+);

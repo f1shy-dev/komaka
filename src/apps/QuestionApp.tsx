@@ -4,7 +4,7 @@ import { streamText, type TextStreamPart } from "ai";
 import { registry, type ProviderName } from "../aiRegistry";
 import Markdown from "@inkkit/ink-markdown";
 import { buildQuestionAssistantPrompt } from "../promptFramework";
-import { toolKit, weatherTool, type ToolKit } from "../tools/_framework";
+import { questionToolKit, toolKit, type ToolKit } from "../tools/_framework";
 
 export default function QuestionApp({
   question,
@@ -41,7 +41,9 @@ export default function QuestionApp({
           console.error(error);
         },
         tools: Object.fromEntries(
-          Object.entries(toolKit()).map(([key, tool]) => [key, tool.tool])
+          Object.entries(agent ? questionToolKit() : toolKit()).map(
+            ([key, tool]) => [key, tool.tool]
+          )
         ),
       });
       for await (const part of result.fullStream) {
