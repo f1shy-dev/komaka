@@ -23,7 +23,11 @@ export default function QuestionApp({
   useEffect(() => {
     (async () => {
       const model = registry.languageModel(
-        modelId && provider ? `${provider}:${modelId}` : "default:normal"
+        modelId && provider
+          ? `${provider}:${modelId}`
+          : agent
+          ? "default:agent"
+          : "default:normal"
       );
       const prompt = await buildQuestionAssistantPrompt(question, agent);
       if (debug) {

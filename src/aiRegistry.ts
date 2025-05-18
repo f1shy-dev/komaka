@@ -10,6 +10,7 @@ export const registry = createProviderRegistry({
 
   default: customProvider({
     languageModels: {
+      agent: openai("gpt-4.1-mini"),
       normal: openai("gpt-4.1-nano"),
       quick: groq("llama-3.1-8b-instant"),
     },
