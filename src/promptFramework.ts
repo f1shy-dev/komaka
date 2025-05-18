@@ -29,9 +29,11 @@ async function buildSystemContext(): Promise<string> {
   const freeMem = os.freemem();
   const now = new Date().toString();
   const ls = await list_directory.tool.execute(
-    { dir: cwd, recursive_depth: 0, includeVcAndPkgDirs: false },
+    { dir: cwd, recursive_depth: 1, includeVcAndPkgDirs: false },
     { toolCallId: "ls", messages: [] }
   );
+  const sub = ls.files.length - 75;
+  const ls_disclaimer = `\n<warn note="There are ${sub} more files in this folder! Use list_directory if you need to know the full list." />`;
 
   let diskFree = "Unknown";
 
@@ -62,10 +64,10 @@ async function buildSystemContext(): Promise<string> {
 ${gitStatus}
 </git-status>`.trim(),
     ls.success &&
-      `<optimistic_list_directory_tool depth=0 dir="${
+      `<optimistic_list_directory_tool depth=2 dir="${
         ls.dir
-      }" vc_and_pkg_dirs=false>
-${ls.files.join("\n")}
+      }" vc_and_pkg_dirs=false first_n=75>
+${ls.files.slice(0, 75).join("\n")}${ls.files.length > 75 ? ls_disclaimer : ""}
 </optimistic_list_directory_tool>`.trim(),
   ]
     .filter(Boolean)
@@ -100,6 +102,7 @@ However the user is not currently able to chat back with you if you need to ask 
 You are suggested to always read files before modifying their content, such that you can understand the context of the file and its contents before making any changes haphazardly. Never assume a file just exists, always run some tools to check it's existance/etc. Prefer the edit_file_segment tool over write_file, as it is more powerful and can handle more complex edits, while being cheaper.
 
 If editing a file in the current folder, make sure to prefix the file path with "./" to indicate it's a relative path.
+You can execute command line shell commands with the exec_command tool. If the user asks you to do something that requires a command line shell command, use the exec_command tool to do it - do not just tell them or write the command in the terminal. Be smart about commands - process the OS the user is on and remember that some commands may be different on different OSes, and there may be better ways to do a certain task for each OS too.
  
 <context>
 ${context}

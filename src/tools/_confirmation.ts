@@ -11,6 +11,10 @@ export async function requireConfirmation(message: string): Promise<boolean> {
       output: process.stdout,
     });
     rl.question(`${chalk.yellow(message)} (y/n): `, (answer) => {
+      // Clear the prompt line after answering
+      readline.moveCursor(process.stdout, 0, -1); // Move up one line
+      readline.clearLine(process.stdout, 0); // Clear the line
+      readline.cursorTo(process.stdout, 0); // Move cursor to start
       rl.close();
       resolve(answer.trim().toLowerCase() === "y");
     });

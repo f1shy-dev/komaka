@@ -9,6 +9,13 @@ import {
   stat_file,
   edit_file_segment,
 } from "./filesystem";
+import { exec_command } from "./command";
+
+type ToolExecuteArgs<T extends Tool> = T extends {
+  execute: (args: infer A, options?: any) => PromiseLike<any>;
+}
+  ? A
+  : never;
 
 type ToolExecuteResult<T extends Tool> = T extends {
   execute: (args: any, options?: any) => PromiseLike<infer R>;
@@ -18,11 +25,13 @@ type ToolExecuteResult<T extends Tool> = T extends {
 
 export function withRender<
   T extends Tool,
-  R extends ((result: ToolExecuteResult<T>) => string) | undefined
->(toolObj: T, render?: R) {
+  R extends ((result: ToolExecuteResult<T>) => string) | undefined,
+  H extends (keyof ToolExecuteArgs<T>)[] = (keyof ToolExecuteArgs<T>)[]
+>(toolObj: T, render?: R, hideArgs?: H) {
   return {
     tool: toolObj,
     render,
+    hideArgs,
   };
 }
 
@@ -52,6 +61,7 @@ export const toolKit = () => ({
   mkdir,
   stat_file,
   edit_file_segment,
+  exec_command,
 });
 
 type ExtractTool<T> = T extends { tool: infer U } ? U : never;

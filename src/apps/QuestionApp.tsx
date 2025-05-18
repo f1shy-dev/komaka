@@ -37,6 +37,9 @@ export default function QuestionApp({
         maxSteps: 10,
         model,
         prompt,
+        onError: (error) => {
+          console.error(error);
+        },
         tools: Object.fromEntries(
           Object.entries(toolKit()).map(([key, tool]) => [key, tool.tool])
         ),
@@ -73,7 +76,11 @@ export default function QuestionApp({
             return <Markdown key={index}>{part.textDelta}</Markdown>;
           case "tool-result":
             const render = toolKit()[part.toolName as keyof ToolKit].render;
+            const hideArgs = toolKit()[part.toolName as keyof ToolKit].hideArgs;
             let formatted = Object.entries(part.args)
+              .filter(
+                ([key]) => !(hideArgs as string[])?.includes(key.toString())
+              )
               .map(([key, value]) => `${key}=${value}`)
               .join(", ");
             return (
