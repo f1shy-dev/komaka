@@ -1,10 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { Box, Text, useInput } from "ink";
 import { streamText } from "ai";
-import { execa } from "execa";
 import { buildCommandPrompt } from "../promptFramework";
 import { registry, type ProviderName } from "../aiRegistry";
-
+import { spawn } from "child_process";
 export default function CommandSuggestApp({
   description,
   provider,
@@ -55,7 +54,7 @@ export default function CommandSuggestApp({
   useInput((input, key) => {
     if (status === "confirm") {
       if (input.toLowerCase() === "y") {
-        void runCommand();
+        runCommand();
       } else if (
         input.toLowerCase() === "n" ||
         key.escape ||
@@ -66,16 +65,22 @@ export default function CommandSuggestApp({
     }
   });
 
-  const runCommand = async () => {
-    setStatus("running");
-    try {
-      const { stdout, stderr } = await execa(command, { shell: true });
-      setRunOutput(`${stdout}\n${stderr}`);
-      setStatus("done");
-    } catch (error: any) {
-      setRunOutput(error.stdout || error.message);
-      setStatus("done");
-    }
+  const runCommand = () => {
+    const [cmd, ...args] = command.split(" ");
+    if (!cmd) return;
+
+    const child = spawn(cmd, args, {
+      shell: true,
+      cwd: process.cwd(),
+      stdio: "inherit",
+    });
+    child.on("exit", (code: number | null) => {
+      process.exit(code ?? 0);
+    });
+    child.on("error", (err: Error) => {
+      console.error("Failed to start command:", err);
+      process.exit(1);
+    });
   };
 
   return (
@@ -85,12 +90,6 @@ export default function CommandSuggestApp({
       {status === "stream" && <Text dimColor>Thinking...</Text>}
       {status === "confirm" && <Text>Run this command? [y/n]</Text>}
       {status === "running" && <Text dimColor>Running command...</Text>}
-      {status === "done" && (
-        <Box flexDirection="column">
-          <Text color="cyan">Command output:</Text>
-          <Text>{runOutput}</Text>
-        </Box>
-      )}
     </Box>
   );
 }
