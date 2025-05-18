@@ -14,7 +14,7 @@ const DEFAULT_TIMEOUT = 20000; // 20 seconds in ms
 export const exec_command = withRender(
   tool({
     description:
-      "Execute a shell command. Requires confirmation before running. Output is truncated to 8k characters (so add sorting/filtering/etc to reduce the output size, or put what you want to see in the top of the output). Default timeout is 20s.",
+      "Execute a shell command. Requires confirmation before running. Output is truncated to 8k characters (so add sorting/filtering/etc to reduce the output size, or put what you want to see in the top of the output). Default timeout is 20s. Does NOT support any interactive commands.",
     parameters: z.object({
       command: z.string().describe("The command to execute (e.g. 'ls')"),
       args: z

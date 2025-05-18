@@ -27,6 +27,7 @@
     "noPropertyAccessFromIndexSignature": false
   },
   "include": ["src"],
+  "exclude": ["node_modules", "src/tools/test_data"],
   "ts-node": {
     "transpileOnly": true,
     "files": true,

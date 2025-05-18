@@ -68,7 +68,9 @@ const list_directory_recursive = async (
     return [];
   }
 
-  const entries = await fs.readdir(normalizedDir, { withFileTypes: true });
+  const entries = await fs
+    .readdir(normalizedDir, { withFileTypes: true })
+    .catch(() => []);
   if (depth <= 0) {
     // Only return files that pass the filter
     return entries
@@ -325,111 +327,140 @@ Extra shared parameters:
         ? (encoding as BufferEncoding)
         : "utf8";
 
-      const content = await fs.readFile(file, { encoding: enc });
-      let newContent = content;
+      let fileContent: string;
+      try {
+        fileContent = await fs.readFile(file, { encoding: enc });
+      } catch (err: any) {
+        return {
+          file,
+          mode,
+          matches: 0,
+          success: false,
+          error:
+            err?.code === "ENOENT"
+              ? "File not found"
+              : err?.message || "Unknown error",
+        };
+      }
+
+      const normalizedContent = fileContent.replace(/\r\n|\r/g, "\n");
+      let newContent = normalizedContent;
       let matches = 0;
 
-      switch (mode) {
-        case "find_replace": {
-          const { find, all = true } = params;
-          if (!find) {
-            return {
-              file,
-              mode,
-              matches: 0,
-              success: false,
-              error: "Missing required parameter: find",
-            };
-          }
-          const regex = new RegExp(find, all ? "g" : "");
-          if (all) {
-            newContent = content.replace(regex, replace);
-            matches = (content.match(regex) || []).length;
-          } else {
-            const match = content.match(regex);
-            if (match) {
-              newContent = content.replace(regex, replace);
-              matches = 1;
+      try {
+        switch (mode) {
+          case "find_replace": {
+            const { find, all = true } = params;
+            if (!find) {
+              return {
+                file,
+                mode,
+                matches: 0,
+                success: false,
+                error: "Missing required parameter: find",
+              };
             }
+            const regex = new RegExp(find, all ? "g" : "");
+            if (all) {
+              newContent = normalizedContent.replace(regex, replace);
+              matches = (normalizedContent.match(regex) || []).length;
+            } else {
+              const match = normalizedContent.match(regex);
+              if (match) {
+                newContent = normalizedContent.replace(regex, replace);
+                matches = 1;
+              }
+            }
+            break;
           }
-          break;
+          case "block": {
+            const { start, end, includeMarkers = false } = params;
+            if (!start || !end) {
+              return {
+                file,
+                mode,
+                matches: 0,
+                success: false,
+                error: "Missing required parameter: start or end",
+              };
+            }
+            const startRegex = new RegExp(start, "m");
+            const endRegex = new RegExp(end, "m");
+            const startMatch = normalizedContent.match(startRegex);
+            if (startMatch?.index == null) break;
+            const afterStartIdx = startMatch.index + startMatch[0].length;
+            const afterStart = normalizedContent.slice(afterStartIdx);
+            const endMatch = afterStart.match(endRegex);
+            if (endMatch?.index == null) break;
+            let blockStart, blockEnd;
+            if (includeMarkers) {
+              blockStart = startMatch.index;
+              blockEnd = afterStartIdx + endMatch.index + endMatch[0].length;
+            } else {
+              blockStart = afterStartIdx;
+              blockEnd = afterStartIdx + endMatch.index;
+            }
+            console.debug({
+              blockStart,
+              blockEnd,
+              before: normalizedContent.slice(0, blockStart),
+              after: normalizedContent.slice(blockEnd),
+              newContent:
+                normalizedContent.slice(0, blockStart) +
+                replace +
+                normalizedContent.slice(blockEnd),
+            });
+            newContent =
+              normalizedContent.slice(0, blockStart) +
+              replace +
+              normalizedContent.slice(blockEnd);
+            matches = 1;
+            break;
+          }
+          case "line_range": {
+            const { startLine, endLine, inclusive = true } = params;
+            if (typeof startLine !== "number" || typeof endLine !== "number") {
+              return {
+                file,
+                mode,
+                matches: 0,
+                success: false,
+                error: "Missing required parameter: startLine or endLine",
+              };
+            }
+            const lines = normalizedContent.split("\n");
+            const startIdx = Math.max(0, startLine - 1);
+            const endIdx = inclusive ? endLine - 1 : endLine - 2;
+            if (startIdx >= 0 && endIdx < lines.length && startIdx <= endIdx) {
+              const numLinesRemoved = endIdx - startIdx + 1;
+              const replacementLines = replace.split("\n");
+              lines.splice(startIdx, numLinesRemoved, ...replacementLines);
+              newContent = lines.join("\n");
+              matches = numLinesRemoved;
+            }
+            break;
+          }
         }
-        case "block": {
-          const { start, end, includeMarkers = false } = params;
-          if (!start || !end) {
-            return {
-              file,
-              mode,
-              matches: 0,
-              success: false,
-              error: "Missing required parameter: start or end",
-            };
-          }
-          const startRegex = new RegExp(start, "m");
-          const endRegex = new RegExp(end, "m");
-          const startMatch = content.match(startRegex);
-          if (startMatch?.index == null) break;
-          const afterStartIdx = startMatch.index + startMatch[0].length;
-          const afterStart = content.slice(afterStartIdx);
-          const endMatch = afterStart.match(endRegex);
-          if (endMatch?.index == null) break;
-          let blockStart, blockEnd;
-          if (includeMarkers) {
-            blockStart = startMatch.index;
-            blockEnd = afterStartIdx + endMatch.index + endMatch[0].length;
-          } else {
-            blockStart = afterStartIdx;
-            blockEnd = afterStartIdx + endMatch.index;
-          }
-          // Always print debug info for troubleshooting
-          console.debug({
-            blockStart,
-            blockEnd,
-            before: content.slice(0, blockStart),
-            after: content.slice(blockEnd),
-            newContent:
-              content.slice(0, blockStart) + replace + content.slice(blockEnd),
-          });
-          newContent =
-            content.slice(0, blockStart) + replace + content.slice(blockEnd);
-          matches = 1;
-          break;
-        }
-        case "line_range": {
-          const { startLine, endLine, inclusive = true } = params;
-          if (typeof startLine !== "number" || typeof endLine !== "number") {
-            return {
-              file,
-              mode,
-              matches: 0,
-              success: false,
-              error: "Missing required parameter: startLine or endLine",
-            };
-          }
-          const lines = content.split("\n");
-          const start = Math.max(0, startLine - 1);
-          const end = inclusive ? endLine - 1 : endLine - 2;
-          if (start >= 0 && end < lines.length && start <= end) {
-            const numLines = end - start + 1;
-            lines.splice(start, numLines, replace);
-            newContent = lines.join("\n");
-            matches = numLines;
-          }
-          break;
-        }
-      }
 
-      if (matches > 0) {
-        await fs.writeFile(file, newContent, { encoding: enc });
-      }
+        if (matches > 0) {
+          await fs.writeFile(file, newContent, { encoding: enc });
+        }
 
-      return {
-        file,
-        mode,
-        matches,
-        success: matches > 0,
-        error: matches === 0 ? "No matches found" : undefined,
-      };
+        return {
+          file,
+          mode,
+          matches,
+          success: matches > 0,
+          error: matches === 0 ? "No matches found" : undefined,
+        };
+      } catch (err: any) {
+        return {
+          file,
+          mode,
+          success: false,
+          error: err?.message || "Unknown error",
+        };
+      }
     },
   })
 );
