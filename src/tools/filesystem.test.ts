@@ -195,68 +195,76 @@ temp/
       );
 
       // Test single replace
-      const res1 = await edit_file_segment.tool.execute(
+      const res1 = (await edit_file_segment.tool.execute(
         {
           mode: "find_replace",
           file: testFile,
           find: "hello",
           replace: "hi",
           all: false,
+          includeMarkers: false,
+          inclusive: true,
           encoding: "utf8",
-        } as const,
+        },
         toolOptions("edit-fr-1")
-      );
+      )) as any;
       expect(res1.success).toBe(true);
       expect(res1.matches).toBe(1);
       const content1 = await fs.readFile(testFile, "utf8");
       expect(content1).toBe("hi world\nhello universe\nhello multiverse");
 
       // Test replace all
-      const res2 = await edit_file_segment.tool.execute(
+      const res2 = (await edit_file_segment.tool.execute(
         {
           mode: "find_replace",
           file: testFile,
           find: "hello",
           replace: "hi",
           all: true,
+          includeMarkers: false,
+          inclusive: true,
           encoding: "utf8",
-        } as const,
+        },
         toolOptions("edit-fr-2")
-      );
+      )) as any;
       expect(res2.success).toBe(true);
       expect(res2.matches).toBe(2);
       const content2 = await fs.readFile(testFile, "utf8");
       expect(content2).toBe("hi world\nhi universe\nhi multiverse");
 
       // Test regex replace
-      const res3 = await edit_file_segment.tool.execute(
+      const res3 = (await edit_file_segment.tool.execute(
         {
           mode: "find_replace",
           file: testFile,
           find: "hi \\w+",
           replace: "hello",
           all: true,
+          includeMarkers: false,
+          inclusive: true,
           encoding: "utf8",
-        } as const,
+        },
         toolOptions("edit-fr-3")
-      );
+      )) as any;
       expect(res3.success).toBe(true);
       expect(res3.matches).toBe(3);
       const content3 = await fs.readFile(testFile, "utf8");
       expect(content3).toBe("hello\nhello\nhello");
 
       // Test no matches
-      const res4 = await edit_file_segment.tool.execute(
+      const res4 = (await edit_file_segment.tool.execute(
         {
           mode: "find_replace",
           file: testFile,
           find: "nonexistent",
           replace: "test",
           all: true,
+          includeMarkers: false,
+          inclusive: true,
           encoding: "utf8",
-        } as const,
+        },
         toolOptions("edit-fr-4")
-      );
+      )) as any;
       expect(res4.success).toBe(false);
       expect(res4.matches).toBe(0);
       expect(res4.error).toBe("No matches found");
@@ -277,7 +285,7 @@ end block 2`;
       );
 
       // Test block replace without markers
-      const res1 = await edit_file_segment.tool.execute(
+      const res1 = (await edit_file_segment.tool.execute(
         {
           mode: "block",
           file: testFile,
@@ -285,21 +293,21 @@ end block 2`;
           end: "end block 1",
           replace: "new content 1",
           includeMarkers: false,
+          all: true,
+          inclusive: true,
           encoding: "utf8",
-        } as const,
+        },
         toolOptions("edit-block-1")
-      );
+      )) as any;
       expect(res1.success).toBe(true);
       expect(res1.matches).toBe(1);
       const content1 = await fs.readFile(testFile, "utf8");
-      expect(content1).toBe(`start block 1new content 1end block 1
-other content
-start block 2
-content 2
-end block 2`);
+      expect(content1).toBe(
+        `start block 1new content 1end block 1\nother content\nstart block 2\ncontent 2\nend block 2`
+      );
 
       // Test block replace with markers
-      const res2 = await edit_file_segment.tool.execute(
+      const res2 = (await edit_file_segment.tool.execute(
         {
           mode: "block",
           file: testFile,
@@ -307,19 +315,21 @@ end block 2`);
           end: "end block 2",
           replace: "replaced entirely",
           includeMarkers: true,
+          all: true,
+          inclusive: true,
           encoding: "utf8",
-        } as const,
+        },
         toolOptions("edit-block-2")
-      );
+      )) as any;
       expect(res2.success).toBe(true);
       expect(res2.matches).toBe(1);
       const content2 = await fs.readFile(testFile, "utf8");
-      expect(content2).toBe(`start block 1new content 1end block 1
-other content
-replaced entirely`);
+      expect(content2).toBe(
+        `start block 1new content 1end block 1\nother content\nreplaced entirely`
+      );
 
       // Test no matches
-      const res3 = await edit_file_segment.tool.execute(
+      const res3 = (await edit_file_segment.tool.execute(
         {
           mode: "block",
           file: testFile,
@@ -327,10 +337,12 @@ replaced entirely`);
           end: "nonexistent end",
           replace: "test",
           includeMarkers: false,
+          all: true,
+          inclusive: true,
           encoding: "utf8",
-        } as const,
+        },
         toolOptions("edit-block-3")
-      );
+      )) as any;
       expect(res3.success).toBe(false);
       expect(res3.matches).toBe(0);
       expect(res3.error).toBe("No matches found");
@@ -345,7 +357,7 @@ replaced entirely`);
       );
 
       // Test inclusive range
-      const res1 = await edit_file_segment.tool.execute(
+      const res1 = (await edit_file_segment.tool.execute(
         {
           mode: "line_range",
           file: testFile,
@@ -353,17 +365,19 @@ replaced entirely`);
           endLine: 4,
           replace: "replaced lines",
           inclusive: true,
+          all: true,
+          includeMarkers: false,
           encoding: "utf8",
-        } as const,
+        },
         toolOptions("edit-lr-1")
-      );
+      )) as any;
       expect(res1.success).toBe(true);
       expect(res1.matches).toBe(3);
       const content1 = await fs.readFile(testFile, "utf8");
       expect(content1).toBe("line 1\nreplaced lines\nline 5");
 
       // Test exclusive range
-      const res2 = await edit_file_segment.tool.execute(
+      const res2 = (await edit_file_segment.tool.execute(
         {
           mode: "line_range",
           file: testFile,
@@ -371,17 +385,19 @@ replaced entirely`);
           endLine: 2,
           replace: "new start",
           inclusive: false,
+          all: true,
+          includeMarkers: false,
           encoding: "utf8",
-        } as const,
+        },
         toolOptions("edit-lr-2")
-      );
+      )) as any;
       expect(res2.success).toBe(true);
       expect(res2.matches).toBe(1);
       const content2 = await fs.readFile(testFile, "utf8");
       expect(content2).toBe("new start\nreplaced lines\nline 5");
 
       // Test out of bounds
-      const res3 = await edit_file_segment.tool.execute(
+      const res3 = (await edit_file_segment.tool.execute(
         {
           mode: "line_range",
           file: testFile,
@@ -389,10 +405,12 @@ replaced entirely`);
           endLine: 12,
           replace: "test",
           inclusive: true,
+          all: true,
+          includeMarkers: false,
           encoding: "utf8",
-        } as const,
+        },
         toolOptions("edit-lr-3")
-      );
+      )) as any;
       expect(res3.success).toBe(false);
       expect(res3.matches).toBe(0);
       expect(res3.error).toBe("No matches found");

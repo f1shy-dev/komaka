@@ -2,6 +2,7 @@ import os from "os";
 import { promises as fs } from "fs";
 import { exec } from "child_process";
 import { execa } from "execa";
+import { list_directory } from "./tools/filesystem";
 
 function gitStatusWithTimeout(cwd: string, timeoutMs: number): Promise<string> {
   return new Promise((resolve) => {
@@ -27,7 +28,10 @@ async function buildSystemContext(): Promise<string> {
   const totalMem = os.totalmem();
   const freeMem = os.freemem();
   const now = new Date().toString();
-  const ls = await execa("ls", { cwd });
+  const ls = await list_directory.tool.execute(
+    { dir: cwd, recursive_depth: 3, includeVcAndPkgDirs: false },
+    { toolCallId: "ls", messages: [] }
+  );
 
   let diskFree = "Unknown";
 
@@ -57,10 +61,13 @@ async function buildSystemContext(): Promise<string> {
     `<git-status>
 ${gitStatus}
 </git-status>`.trim(),
-    `<ls>
-${ls.stdout.split("\n").join("  ")}
-</ls>`.trim(),
-  ].join("\n");
+    ls.success &&
+      `<optimistic_list_directory_tool depth=3 dir="${ls.dir}">
+${ls.files.join("\n")}
+</optimistic_list_directory_tool>`.trim(),
+  ]
+    .filter(Boolean)
+    .join("\n");
 }
 
 export async function buildCommandPrompt(description: string): Promise<string> {
@@ -88,7 +95,7 @@ You have access to a set of tools that are executed upon the user's approval. Yo
 
 However the user is not currently able to chat back with you if you need to ask them for more information. So unless their goal is very very unclear, you should try to use tools and your own knowledge to accomplish their goal as best you can without any further clarification.
 
-You are suggested to always read files before modifying their content, such that you can understand the context of the file and its contents before making any changes haphazardly.
+You are suggested to always read files before modifying their content, such that you can understand the context of the file and its contents before making any changes haphazardly. Never assume a file just exists, always run some tools to check it's existance/etc. Prefer the edit_file_segment tool over write_file, as it is more powerful and can handle more complex edits, while being cheaper.
  
 <context>
 ${context}

@@ -5,6 +5,7 @@ import meow from "meow";
 import CommandSuggestApp from "./apps/CommandSuggestApp.js";
 import QuestionApp from "./apps/QuestionApp";
 import { ProviderNames, type ProviderName } from "./aiRegistry.js";
+import dotenv from "dotenv";
 
 const cli = meow(
   `
@@ -54,6 +55,24 @@ const [type, ...rest] = cli.input as [string, ...string[]];
 const text = rest.join(" ");
 globalThis.debug = cli.flags.debug;
 globalThis.yolo = cli.flags.yolo;
+
+const env_paths = [
+  `${__dirname}/../.env`,
+  `${__dirname}/../.env.local`,
+  `${process.env.HOME || process.env.USERPROFILE}/.config/komaka/.env`,
+];
+
+for (const path of env_paths) {
+  const result = dotenv.config({ path });
+  if (globalThis.debug) {
+    if (result.error) {
+      console.error(`dotenv: failed to load ${path}:`, result.error);
+    } else if (result.parsed) {
+      console.log(`dotenv: loaded ${path}`);
+    }
+  }
+}
+
 const selectedProvider = cli.flags.provider as ProviderName;
 if (!ProviderNames.includes(selectedProvider)) {
   console.error(

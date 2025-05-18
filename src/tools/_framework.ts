@@ -7,6 +7,7 @@ import {
   delete_file,
   mkdir,
   stat_file,
+  edit_file_segment,
 } from "./filesystem";
 
 type ToolExecuteResult<T extends Tool> = T extends {
@@ -50,6 +51,7 @@ export const toolKit = () => ({
   delete_file,
   mkdir,
   stat_file,
+  edit_file_segment,
 });
 
 type ExtractTool<T> = T extends { tool: infer U } ? U : never;
