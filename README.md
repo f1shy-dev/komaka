@@ -36,7 +36,7 @@ GOOGLE_GENERATIVE_AI_API_KEY=...
 ```
 
 ### For everyday use
-```
+```bash
 echo 'alias aic="komaka agent"' >> ~/.bashrc
 echo 'alias aiq="komaka question"' >> ~/.bashrc
 echo 'alias aic="komaka command"' >> ~/.bashrc
