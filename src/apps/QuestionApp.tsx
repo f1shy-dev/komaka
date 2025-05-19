@@ -30,8 +30,15 @@ export default function QuestionApp({
           : "default:normal"
       );
       const prompt = await buildQuestionAssistantPrompt(question, agent);
+      const tools = Object.fromEntries(
+        Object.entries(agent ? toolKit() : questionToolKit()).map(
+          ([key, tool]) => [key, tool.tool]
+        )
+      );
       if (debug) {
-        console.log(prompt);
+        console.debug("Agent:", agent);
+        console.debug("Prompt:", prompt);
+        console.debug("Tools:", Object.keys(tools));
       }
       const result = streamText({
         maxSteps: 10,
@@ -40,11 +47,7 @@ export default function QuestionApp({
         onError: (error) => {
           console.error(error);
         },
-        tools: Object.fromEntries(
-          Object.entries(agent ? questionToolKit() : toolKit()).map(
-            ([key, tool]) => [key, tool.tool]
-          )
-        ),
+        tools,
       });
       for await (const part of result.fullStream) {
         // setParts((prev) => [...prev, part as TextStreamPart<ToolKit>]);

@@ -11,6 +11,8 @@ import {
   cd,
 } from "./filesystem";
 import { exec_command } from "./command";
+import type { ReactNode } from "react";
+import { edit_file } from "./agentic-edit";
 
 type ToolExecuteArgs<T extends Tool> = T extends {
   execute: (args: infer A, options?: any) => PromiseLike<any>;
@@ -26,7 +28,7 @@ type ToolExecuteResult<T extends Tool> = T extends {
 
 export function withRender<
   T extends Tool,
-  R extends ((result: ToolExecuteResult<T>) => string) | undefined,
+  R extends ((result: ToolExecuteResult<T>) => string | ReactNode) | undefined,
   H extends (keyof ToolExecuteArgs<T>)[] = (keyof ToolExecuteArgs<T>)[]
 >(toolObj: T, render?: R, hideArgs?: H) {
   return {
@@ -46,6 +48,7 @@ export const toolKit = () => ({
   // edit_file_segment,
   exec_command,
   cd,
+  edit_file,
 });
 
 export const questionToolKit = () => ({
