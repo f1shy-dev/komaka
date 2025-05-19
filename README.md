@@ -4,6 +4,8 @@
 
 komaka is a lightweight, fast, and versatile command-line AI assistant built with Bun, AI SDK, and React Ink. It helps users generate shell commands, answer questions, and perform complex tasks using AI models from multiple providers.
 
+![Image](./komaka-term.png)
+
 ## Features
 
 - Generate shell commands from natural language descriptions.
