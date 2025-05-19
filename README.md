@@ -2,44 +2,61 @@
 
 "Komaka" (こまか, 細か) means "fine," "detailed," or "precise" in Japanese.
 
-komaka is a lightweight, fast, and versatile command-line AI assistant built with Bun and React Ink. It helps users generate shell commands, answer questions, and perform complex tasks using AI models from multiple providers.
+komaka is a lightweight, fast, and versatile command-line AI assistant built with Bun, AI SDK, and React Ink. It helps users generate shell commands, answer questions, and perform complex tasks using AI models from multiple providers.
 
 ## Features
 
 - Generate shell commands from natural language descriptions.
 - Ask general or technical questions and get concise AI-generated answers.
 - Use an advanced agent mode for step-by-step task completion with tool access.
-- Supports multiple AI providers: OpenAI, Google, Groq.
+- Supports multiple AI providers: OpenAI, Google, Groq (via [AI SDK](https://ai-sdk.dev/)).
 - Context-aware prompts using system information like current directory, OS, memory, disk space, and git status.
 - Advanced file editing capabilities with find/replace, block markers, and line ranges.
 
-## Installation
-
-Install dependencies:
-
+## Usage
 ```bash
+git clone https://github.com/f1shy-dev/komaka
+cd komaka
 bun install
+bun run build
+
+bun dist/index.js <type> <text> [options]
+# or
+bun link
+komaka <type> <text> [options]
 ```
 
-## Usage
+Setup your .env in `$HOME/.config/komaka/.env`:
+```
+OPENAI_API_KEY=...
+GROQ_API_KEY=...
+GOOGLE_GENERATIVE_AI_API_KEY=...
+```
 
-Run the CLI with the following syntax:
+### For everyday use
+```
+echo 'alias aic="komaka agent"' >> ~/.bashrc
+echo 'alias aiq="komaka question"' >> ~/.bashrc
+echo 'alias aic="komaka command"' >> ~/.bashrc
 
-```bash
-bun run index.ts <type> <text> [options]
+aic install ffmpeg
+aia biggest files here
+aia convert the jpegs to pngs inside a folder 'new_output'
+aia compress the promo mp4 for social media
 ```
 
 Where `<type>` is one of:
 - `c` or `command`: Generate shell commands.
 - `q` or `question`: Ask a question.
-- `a` or `agent`: Use the advanced agent mode.
+- `a` or `agent`: Use the advanced agent mode (all the tools!).
 
 Examples:
 
 ```bash
-bun run index.ts c init new git repo here
-bun run index.ts q what is this error?
-bun run index.ts a read files in repo and then update the readme to be more helpful
+komaka c init new git repo here
+komaka q what is this error?
+komaka a read files in repo and then update the readme to be more helpful
+komaka agent implement a simple api with hono in ./project-3 with a weather endpoint using open meteo and some health apis too - use bun
 ```
 
 Options:
@@ -47,73 +64,3 @@ Options:
 - `--model`: Specify the model ID to use.
 - `--debug`: Show debug information.
 - `--yolo`: Skip confirmation prompts.
-
-## Source Files
-
-- `src/index.tsx`: CLI entry point.
-- `src/aiRegistry.ts`: AI provider registry.
-- `src/promptFramework.ts`: Builds context-aware prompts.
-- `src/apps/CommandSuggestApp.tsx`: Command suggestion UI.
-- `src/apps/QuestionApp.tsx`: Question answering UI.
-
-## Notes
-
-This project leverages Bun for fast runtime and React Ink for terminal UI components. It is designed to be a helpful, context-aware AI assistant in the terminal.
-
-## File Editing
-
-The agent supports three powerful modes for editing files:
-
-### Find & Replace Mode
-
-Replace text using string or regex patterns:
-
-```typescript
-await edit_file_segment.tool.execute({
-  mode: "find_replace",
-  file: "path/to/file",
-  find: "pattern to find",
-  replace: "replacement text",
-  all: true,  // Replace all occurrences (default) or just first one
-});
-```
-
-### Block Mode
-
-Replace content between start and end markers:
-
-```typescript
-await edit_file_segment.tool.execute({
-  mode: "block",
-  file: "path/to/file",
-  start: "start marker pattern",
-  end: "end marker pattern",
-  replace: "new content",
-  includeMarkers: false,  // Whether to include markers in replacement
-});
-```
-
-### Line Range Mode
-
-Replace specific lines in a file:
-
-```typescript
-await edit_file_segment.tool.execute({
-  mode: "line_range",
-  file: "path/to/file",
-  startLine: 10,  // 1-based line numbers
-  endLine: 20,
-  replace: "new content",
-  inclusive: true,  // Whether to include endLine in replacement
-});
-```
-
-All modes support:
-- String or regex patterns
-- UTF-8 encoding (default) or other encodings
-- Detailed success/error reporting
-- Safe file handling
-
----
-
-Feel free to explore and extend komaka to suit your AI assistant needs!
