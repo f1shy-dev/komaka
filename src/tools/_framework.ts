@@ -13,6 +13,7 @@ import {
 import { exec_command } from "./command";
 import type { ReactNode } from "react";
 import { edit_file } from "./agentic-edit";
+import { batch_web_fetch } from "./web-batch-fetch";
 
 type ToolExecuteArgs<T extends Tool> = T extends {
   execute: (args: infer A, options?: any) => PromiseLike<any>;
@@ -49,6 +50,7 @@ export const toolKit = () => ({
   exec_command,
   cd,
   edit_file,
+  batch_web_fetch,
 });
 
 export const questionToolKit = () => ({
