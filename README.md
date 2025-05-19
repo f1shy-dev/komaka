@@ -62,7 +62,7 @@ komaka agent implement a simple api with hono in ./project-3 with a weather endp
 ```
 
 Options:
-- `--provider`: AI provider to use (`openai`, `google`, `groq`). Default is `groq`.
+- `--provider`: AI provider to use (`openai`, `google`, `groq`). Default depends on mode (see [src/aiRegistry.ts](src/aiRegistry.ts)).
 - `--model`: Specify the model ID to use.
 - `--debug`: Show debug information.
 - `--yolo`: Skip confirmation prompts.
